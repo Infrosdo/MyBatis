@@ -12,20 +12,110 @@
     </select>
 
     <!-- resultMap用法 -->
-    <!-- 1、constructor -->
-    <resultMap id="constructor" type="user">
+    <!-- 1、id/result -->
+    <resultMap id="baseResultMap" type="user">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="age" column="age" javaType="_int" jdbcType="INTEGER"/>
+    </resultMap>
+    <select id="baseResultMap" parameterType="int" resultMap="baseResultMap">
+        SELECT *
+        FROM user
+        WHERE id = #{id}
+    </select>
+
+    <!-- 2、constructor -->
+    <resultMap id="constructorMap" type="user">
         <constructor>
             <idArg column="id" javaType="_int"/>
             <arg column="name" javaType="String"/>
             <arg column="age" javaType="_int"/>
         </constructor>
     </resultMap>
-
-    <select id="consSelect" parameterType="int" resultMap="constructor">
+    <select id="constructorMap" parameterType="int" resultMap="constructorMap">
         SELECT *
         FROM user
         WHERE id = #{id}
     </select>
+
+    <!-- 3、association:关联的嵌套结果映射 -->
+    <resultMap id="orderResult" type="orderExt">
+        <id column="order_id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="create_user_id" property="createUserId"/>
+        <association property="user" javaType="User" resultMap="userResult"/>
+    </resultMap>
+    <resultMap id="userResult" type="user">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="age" column="age"/>
+    </resultMap>
+    <select id="selectOrder" resultMap="orderResult">
+        select `order`.*, `user`.*
+        from `user`,
+             `order`
+        where `user`.id = `order`.create_user_id
+          and `order`.order_id = #{id}
+    </select>
+
+    <!-- 3、association:关联的嵌套 Select 查询 -->
+    <!--<resultMap id="orderResult" type="orderExt">
+        <id column="order_id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="create_user_id" property="createUserId"/>
+        <association column="create_user_id" property="user" select="selectUser"/>
+    </resultMap>
+    <select id="selectOrder" resultMap="orderResult">
+        select *
+        from `order`
+        where order_id = #{id}
+    </select>
+    <select id="selectUser" resultType="user">
+        select *
+        from user
+        where id = #{id}
+    </select>-->
+
+    <!-- 4、collection:集合的嵌套结果映射 -->
+    <!--<resultMap id="CollectionUserResult" type="userExt">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="age" column="age"/>
+        <collection property="orders" ofType="order"
+                    resultMap="CollectionOrderResult"/>
+    </resultMap>
+    <resultMap id="CollectionOrderResult" type="order">
+        <id column="order_id" property="id"/>
+        <result column="order_no" property="orderNo"/>
+        <result column="create_user_id" property="createUserId"/>
+    </resultMap>
+    <select id="collectionSelect" resultMap="CollectionUserResult">
+        select `order`.*, `user`.*
+        from `user`,
+             `order`
+        where `user`.id = `order`.create_user_id
+          and `user`.id = #{id}
+    </select>-->
+
+    <!-- 4、collection:集合的嵌套 Select 查询 -->
+    <resultMap id="CollectionUserResult" type="userExt">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="age" column="age"/>
+        <collection property="orders" column="id" ofType="order"
+                    select="collectionSelectOrder"/>
+    </resultMap>
+    <select id="collectionSelectOrder" resultType="order">
+        select *
+        from `order`
+        where create_user_id = #{id}
+    </select>
+    <select id="collectionSelect" resultMap="CollectionUserResult">
+        select *
+        from user
+        where id = #{id}
+    </select>
+
 
     <!-- 普通添加 -->
     <insert id="insert" parameterType="User">
